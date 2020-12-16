@@ -6,7 +6,7 @@ on:
 
 jobs:
     php-74:
-        name: PHPUnit (PHP 7.4)
+        name: "PHPUnit (PHP 7.4)"
         runs-on: ubuntu-latest
 
         services:
@@ -31,22 +31,40 @@ jobs:
                   php-version: "7.4"
                   extensions: pdo_mysql
 
-            -   name: Determine composer cache directory
-                id: composer-cache
-                run: echo "::set-output name=directory::$(composer config cache-dir)"
+            - name: "List modified files"
+              id: diff
+              run: |
+                git fetch origin
+                git diff --name-only --diff-filter=AM origin/${{ github.base_ref }} > git_diff_files.txt
+                echo "::set-output name=diff::$(cat git_diff_files.txt)"
 
-            -   name: Cache composer dependencies
+            -   name: "Cache composer dependencies"
                 uses: actions/cache@v1
                 with:
-                    path: ${{ steps.composer-cache.outputs.directory }}
+                    path: "~/.composer/cache"
                     key: composer-${{ hashFiles('**/composer.lock') }}
                     restore-keys: composer-
 
             - name: "Install PHP dependencies with composer"
               run: composer update --no-interaction
 
+            - name: "Check PHP Mess Detector"
+              run: if [ "$DIFF" != '' ]; then vendor/bin/phpmd `echo "$DIFF" | xargs | sed -e :a -e '$!N; s/ /,/; ta'` text phpmd.xml; fi
+              env:
+                DIFF: ${{ steps.diff.outputs.diff }}
+
+            - name: "Check PHPCSFixer"
+              run: if [ "$DIFF" != '' ]; then vendor/bin/php-cs-fixer fix --dry-run --diff --config=main/dev/Resources/travis/php-cs.php; fi
+              env:
+                DIFF: ${{ steps.diff.outputs.diff }}
+
+            - name: "Check ESLint"
+              run: if [ "$DIFF" != '' ]; then node_modules/.bin/eslint --ext js --ext jsx `echo "$DIFF" | grep 'Resources/modules/.\+\.js' | tr '\n' ' '`; fi
+              env:
+                DIFF: ${{ steps.diff.outputs.diff }}
+
             - name: "Set project parameters"
-              run: "php bin/configure --default"
+              run: php bin/configure --default
 
             - name: "Install Claroline platform"
               run: php bin/console claroline:install --env=test -vvv

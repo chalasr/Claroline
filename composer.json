@@ -1,6 +1,6 @@
 {
-    "name": "claroline/distribution",
-    "description": "Claroline distribution",
+    "name": "claroline/claroline",
+    "description": "Claroline Project",
     "keywords": ["Claroline", "Distribution"],
     "homepage": "http://www.claroline.net",
     "type": "claroline-core",
