@@ -3,7 +3,7 @@ name: Patch Release (scheduled)
 on:
   workflow_dispatch:
 #  schedule:
-#    - cron: "0 */1 * * *" # every wednesday
+#    - cron: "0 16 * * 3" # Runs every Wednesday at 4pm
 
 jobs:
   build:
